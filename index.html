@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Armoniógrafo Epicicloidal</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="panel">
+        <h1>Armoniógrafo Epicicloidal</h1>
+        <p class="subtitle">Dos bases fijas, dos ruedas orbitando y el lapiz por interseccion de brazos.</p>
+        <div class="panel-scroll">
+          <details class="group" open>
+            <summary>Configuracion general</summary>
+            <div class="group-body">
+              <p id="geometryClosureBadge" class="closure-badge ok">CIERRE DE CURVA EN 1 CICLO: SI</p>
+              <p id="geometryClosureHint" class="closure-hint">
+                La simulacion solo acepta configuraciones en las que el lapiz existe durante todo el ciclo y vuelve al punto inicial.
+              </p>
+              <label>Distancia Zero <span data-out="zeroDistance"></span>
+                <input type="range" min="180" max="520" step="1" value="330" data-key="zeroDistance" />
+              </label>
+              <p id="zeroDistanceHint" class="closure-hint"></p>
+              <label>Duracion visual del ciclo (s) <span data-out="cycleSeconds"></span>
+                <input type="range" min="2" max="20" step="0.5" value="8" data-key="cycleSeconds" />
+              </label>
+              <label>Velocidad visual <span data-out="playbackSpeed"></span>
+                <input type="range" min="1" max="60" step="1" value="30" data-key="playbackSpeed" />
+              </label>
+              <p id="cycleInfo" class="closure-hint"></p>
+              <div class="group recipe-box">
+                <div class="group-body">
+                  <p class="recipe-title">Recetario</p>
+                  <p id="recipeHint" class="closure-hint"></p>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="group" open>
+            <summary>Ruedas base O1 y O1'</summary>
+            <div class="group-body">
+              <label class="sync-toggle">
+                <input id="syncBaseTeeth" type="checkbox" data-sync="baseTeeth" checked />
+                Igualar dientes O1 y O1'
+              </label>
+              <label>Nº dientes engranaje centro O1 <span data-out="baseTeethL"></span>
+                <input type="range" min="10" max="80" step="1" value="39" data-key="baseTeethL" />
+              </label>
+              <label>Radio derivado R1 <span data-out="baseRadiusLDerived"></span>
+              </label>
+              <label>Nº dientes engranaje centro O1' <span data-out="baseTeethR"></span>
+                <input type="range" min="10" max="80" step="1" value="39" data-key="baseTeethR" />
+              </label>
+              <label>Radio derivado R1' <span data-out="baseRadiusRDerived"></span>
+              </label>
+            </div>
+          </details>
+
+          <details class="group" open>
+            <summary>Ruedas orbitantes O2 y O2'</summary>
+            <div class="group-body">
+              <p id="orbitHint" class="closure-hint">
+                Una unica velocidad base mueve ambas ruedas dentadas moviles. El dentado fija el radio y la relacion de engrane.
+              </p>
+              <label class="sync-toggle">
+                <input id="syncOrbitTeeth" type="checkbox" data-sync="orbitTeeth" />
+                Igualar dientes O2 y O2'
+              </label>
+              <label>Modulo de diente <span data-out="toothModule"></span>
+                <input type="range" min="1" max="4" step="0.1" value="2" data-key="toothModule" />
+              </label>
+              <label>Dientes O2 <span data-out="orbitTeethL"></span>
+                <input type="range" min="8" max="28" step="1" value="9" data-key="orbitTeethL" />
+              </label>
+              <label>Radio derivado R2 <span data-out="orbitRadiusLDerived"></span>
+              </label>
+              <label>Dientes O2' <span data-out="orbitTeethR"></span>
+                <input type="range" min="8" max="28" step="1" value="21" data-key="orbitTeethR" />
+              </label>
+              <label>Radio derivado R2' <span data-out="orbitRadiusRDerived"></span>
+              </label>
+              <label>Velocidad base comun <span data-out="driveSpeed"></span>
+                <input type="range" min="0" max="0.02" step="0.001" value="0.004" data-key="driveSpeed" />
+              </label>
+              <label class="sync-toggle">
+                <input id="reverseDrive" type="checkbox" />
+                Invertir sentido comun
+              </label>
+              <label>Fase angular inicial izquierda <span data-out="phaseL"></span>
+                <input type="range" min="0" max="6.283" step="0.01" value="0.73" data-key="phaseL" />
+              </label>
+              <label>Fase angular inicial derecha <span data-out="phaseR"></span>
+                <input type="range" min="0" max="6.283" step="0.01" value="3.38" data-key="phaseR" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group" open>
+            <summary>Brazos 1 y 2</summary>
+            <div class="group-body">
+              <label class="sync-toggle">
+                <input id="syncArms" type="checkbox" data-sync="arms" />
+                Igualar brazo 1 y brazo 2
+              </label>
+              <label>Brazo 1 <span data-out="armL"></span>
+                <input type="range" min="80" max="700" step="1" value="280" data-key="armL" />
+              </label>
+              <label>Brazo 2 <span data-out="armR"></span>
+                <input type="range" min="80" max="700" step="1" value="310" data-key="armR" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group" open>
+            <summary>Ecuacion del lapiz</summary>
+            <div class="group-body">
+              <p id="guaranteeBadge" class="guarantee-badge ok">GARANTIA GLOBAL: SI</p>
+              <pre id="equationText" class="equation"></pre>
+              <p id="pointNow" class="equation-now"></p>
+            </div>
+          </details>
+
+          <p id="status" class="status">Listo para iniciar.</p>
+        </div>
+      </section>
+
+      <section class="stage-wrap">
+        <div class="canvas-toolbar canvas-toolbar-top">
+          <div class="toolbar-group">
+            <button id="start">Start</button>
+            <button id="stop">Stop</button>
+            <button id="resetSim">Reinicio</button>
+            <button id="clear">Borrar trazo</button>
+            <button id="save">Guardar</button>
+            <button id="exportParams">Exportar params</button>
+            <button id="importParams">Importar params</button>
+            <input id="importParamsFile" type="file" accept="application/json" hidden />
+          </div>
+          <div class="toolbar-group">
+            <input id="traceColor" class="color-input" type="color" value="#66e2a8" aria-label="Color de linea" />
+            <button id="centerView">Centrar vista</button>
+            <button id="zoomIn">Zoom +</button>
+            <button id="zoomOut">Zoom -</button>
+            <button id="zoomReset">Reset vista</button>
+          </div>
+        </div>
+        <div class="stage-shell">
+          <canvas id="stage" width="1100" height="760"></canvas>
+        </div>
+        <p class="canvas-hint">Rueda: zoom, arrastrar: mover vista</p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

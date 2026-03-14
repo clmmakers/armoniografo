@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulador Pantografo 4 Motores</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="panel">
+        <h1>Simulador Pantografo</h1>
+        <p class="subtitle">4 motores paso a paso: 2 deslizadores + 2 rotores</p>
+        <div class="panel-scroll">
+          <details class="group" open>
+            <summary>Geometria del pantografo</summary>
+            <div class="group-body">
+              <p id="geometryClosureBadge" class="closure-badge ok">CIERRE DE CURVA GARANTIZADO: SI</p>
+              <p id="geometryClosureHint" class="closure-hint">
+                Esta geometria asegura que el pantografo puede cerrar la curva y que el punto permanece en la zona superior durante todo el movimiento.
+              </p>
+              <label>Separacion de bases <span data-out="baseGap"></span>
+                <input type="range" min="120" max="520" step="1" value="205" data-key="baseGap" />
+              </label>
+              <label>Brazo pantografo izquierdo <span data-out="linkL"></span>
+                <input type="range" min="40" max="360" step="1" value="274" data-key="linkL" />
+              </label>
+              <label>Brazo pantografo derecho <span data-out="linkR"></span>
+                <input type="range" min="40" max="360" step="1" value="261" data-key="linkR" />
+              </label>
+              <label>Carrera izquierda <span data-out="strokeL"></span>
+                <input type="range" min="20" max="350" step="1" value="127" data-key="strokeL" />
+              </label>
+              <label>Carrera derecha <span data-out="strokeR"></span>
+                <input type="range" min="20" max="350" step="1" value="125" data-key="strokeR" />
+              </label>
+              <label>Brazo biela izquierda <span data-out="armL"></span>
+                <input type="range" min="20" max="260" step="1" value="25" data-key="armL" />
+              </label>
+              <label>Brazo biela derecha <span data-out="armR"></span>
+                <input type="range" min="20" max="260" step="1" value="29" data-key="armR" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary>Deslizador izquierdo</summary>
+            <div class="group-body">
+              <label>Frecuencia (Hz) <span data-out="slideFreqL"></span>
+                <input type="range" min="0" max="2" step="0.01" value="0.6" data-key="slideFreqL" />
+              </label>
+              <label>Fase (rad) <span data-out="slidePhaseL"></span>
+                <input type="range" min="0" max="6.283" step="0.01" value="4.05" data-key="slidePhaseL" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary>Deslizador derecho</summary>
+            <div class="group-body">
+              <label>Frecuencia (Hz) <span data-out="slideFreqR"></span>
+                <input type="range" min="0" max="2" step="0.01" value="0.3" data-key="slideFreqR" />
+              </label>
+              <label>Fase (rad) <span data-out="slidePhaseR"></span>
+                <input type="range" min="0" max="6.283" step="0.01" value="1.46" data-key="slidePhaseR" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary>Rotor izquierdo</summary>
+            <div class="group-body">
+              <label>Frecuencia (Hz) <span data-out="rotFreqL"></span>
+                <input type="range" min="-3" max="3" step="0.01" value="0.6" data-key="rotFreqL" />
+              </label>
+              <label>Fase (rad) <span data-out="rotPhaseL"></span>
+                <input type="range" min="0" max="6.283" step="0.01" value="4.93" data-key="rotPhaseL" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group">
+            <summary>Rotor derecho</summary>
+            <div class="group-body">
+              <label>Frecuencia (Hz) <span data-out="rotFreqR"></span>
+                <input type="range" min="-3" max="3" step="0.01" value="-1" data-key="rotFreqR" />
+              </label>
+              <label>Fase (rad) <span data-out="rotPhaseR"></span>
+                <input type="range" min="0" max="6.283" step="0.01" value="6.08" data-key="rotPhaseR" />
+              </label>
+            </div>
+          </details>
+
+          <details class="group" open>
+            <summary>Ecuacion del punto trazador</summary>
+            <div class="group-body">
+            <p id="guaranteeBadge" class="guarantee-badge ok">GARANTIA GLOBAL: SI</p>
+            <pre id="equationText" class="equation"></pre>
+            <p id="pointNow" class="equation-now"></p>
+            </div>
+          </details>
+
+          <p id="status" class="status">Listo para iniciar.</p>
+        </div>
+      </section>
+
+      <section class="stage-wrap">
+        <div class="stage-shell">
+          <div class="canvas-toolbar canvas-toolbar-left">
+            <div class="toolbar-group">
+              <button id="start">Start</button>
+              <button id="stop">Stop</button>
+              <button id="resetSim">Reinicio</button>
+              <button id="clear">Borrar trazo</button>
+              <button id="save">Guardar</button>
+            </div>
+            <div class="toolbar-group">
+              <input id="traceColor" class="color-input" type="color" value="#66e2a8" aria-label="Color de linea" />
+              <button id="centerView">Centrar vista</button>
+              <button id="zoomIn">Zoom +</button>
+              <button id="zoomOut">Zoom -</button>
+              <button id="zoomReset">Reset vista</button>
+            </div>
+          </div>
+          <canvas id="stage" width="1100" height="760"></canvas>
+        </div>
+        <p class="canvas-hint">Rueda: zoom, arrastrar: mover vista</p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
