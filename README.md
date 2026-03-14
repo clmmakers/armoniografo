@@ -68,6 +68,10 @@ La interfaz incluye:
 
 ## Ejecución local
 
+Puedes utilizar la extensión Live Server si estás en Visual Studio Code. Despues abre `http://localhost:3000`
+
+También puedes levantar (si tienes python 3 instalado) un servidor local:
+
 ```bash
 python3 -m http.server 8088
 ```
