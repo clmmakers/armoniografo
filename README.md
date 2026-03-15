@@ -54,6 +54,7 @@ Se puede guardar y recuperar una configuración completa mediante JSON:
 
 - `Exportar params`: exporta `model`, `syncState` y color de trazo.
 - `Importar params`: carga una configuración exportada previamente.
+- `Preset`: descubre automáticamente los JSON dentro de `presets/`, los agrupa por tipo (`base_`, `arq_`, `orn_`) y carga la configuración elegida.
 
 También se puede exportar el trazo actual como `SVG`.
 
@@ -77,6 +78,8 @@ python3 -m http.server 8088
 ```
 
 Después abre `http://localhost:8088`.
+
+El selector de presets necesita abrir la app a través de HTTP para poder leer dinámicamente el contenido de `presets/`.
 
 ## Archivos
 

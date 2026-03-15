@@ -138,6 +138,12 @@
             <button id="exportParams">Exportar params</button>
             <button id="importParams">Importar params</button>
             <input id="importParamsFile" type="file" accept="application/json" hidden />
+            <label class="toolbar-select-wrap" for="presetSelect">
+              <span class="toolbar-select-label">Preset</span>
+              <select id="presetSelect" class="toolbar-select" disabled>
+                <option value="">Cargando presets...</option>
+              </select>
+            </label>
           </div>
           <div class="toolbar-group">
             <input id="traceColor" class="color-input" type="color" value="#66e2a8" aria-label="Color de linea" />

@@ -308,6 +308,38 @@ button:hover {
   backdrop-filter: blur(8px);
 }
 
+.toolbar-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.toolbar-select-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.toolbar-select {
+  min-width: 220px;
+  border: 1px solid var(--line);
+  background: rgba(22, 29, 43, 0.92);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.toolbar-select:hover {
+  border-color: var(--accent);
+}
+
+.toolbar-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .color-control {
   color: var(--muted);
   font-size: 0.78rem;
@@ -384,6 +416,11 @@ button:hover {
   .canvas-toolbar {
     width: 100%;
     margin-bottom: 0;
+  }
+
+  .toolbar-select {
+    min-width: 0;
+    width: 100%;
   }
 
   .stage-shell {

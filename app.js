@@ -24,6 +24,7 @@ const saveBtn = document.getElementById("save");
 const exportParamsBtn = document.getElementById("exportParams");
 const importParamsBtn = document.getElementById("importParams");
 const importParamsFileInput = document.getElementById("importParamsFile");
+const presetSelect = document.getElementById("presetSelect");
 const centerViewBtn = document.getElementById("centerView");
 const traceColorInput = document.getElementById("traceColor");
 const reverseDriveInput = document.getElementById("reverseDrive");
@@ -38,6 +39,13 @@ const MAX_ANGULAR_STEP = 0.03;
 const TRACE_MIN_SEGMENT = 0.35;
 const MAX_TRACE_POINTS = 120000;
 const TRACE_CANVAS_MARGIN = 1400;
+const PRESET_DIRECTORY = "presets/";
+const PRESET_GROUPS = [
+  { key: "base", prefix: "base_", label: "Basicos" },
+  { key: "arq", prefix: "arq_", label: "Arquitectonicos" },
+  { key: "orn", prefix: "orn_", label: "Ornamentales" },
+  { key: "other", prefix: "", label: "Otros" },
+];
 
 traceCanvas.width = stage.width + TRACE_CANVAS_MARGIN * 2;
 traceCanvas.height = stage.height + TRACE_CANVAS_MARGIN * 2;
@@ -95,6 +103,7 @@ let elapsed = 0;
 let traceColor = traceColorInput.value;
 let geometrySnapshot = null;
 let lastTracePoint = null;
+let presetCatalog = [];
 
 document.querySelectorAll("span[data-out]").forEach((node) => {
   outputs.set(node.dataset.out, node);
@@ -144,6 +153,191 @@ function numberToFraction(value) {
 
 function fmt(value) {
   return Number(value).toFixed(3);
+}
+
+function formatPresetLabel(value) {
+  const normalized = value
+    .replace(/\.json$/i, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
+
+  if (!normalized) return "Sin nombre";
+
+  return normalized.replace(/\b([a-z])/g, (match) => match.toUpperCase());
+}
+
+function getPresetGroup(fileName) {
+  const normalized = fileName.replace(/\.json$/i, "");
+  return PRESET_GROUPS.find((group) => group.prefix && normalized.startsWith(group.prefix))
+    ?? PRESET_GROUPS[PRESET_GROUPS.length - 1];
+}
+
+function buildPresetEntry(fileName, url) {
+  const group = getPresetGroup(fileName);
+  const stem = fileName.replace(/\.json$/i, "");
+  const rawLabel = group.prefix && stem.startsWith(group.prefix)
+    ? stem.slice(group.prefix.length)
+    : stem;
+
+  return {
+    fileName,
+    url,
+    groupKey: group.key,
+    label: formatPresetLabel(rawLabel),
+  };
+}
+
+function sortPresetEntries(entries) {
+  const groupOrder = new Map(PRESET_GROUPS.map((group, index) => [group.key, index]));
+
+  return entries.slice().sort((left, right) => {
+    const orderDelta = (groupOrder.get(left.groupKey) ?? 999) - (groupOrder.get(right.groupKey) ?? 999);
+    if (orderDelta !== 0) return orderDelta;
+    return left.label.localeCompare(right.label, "es", { sensitivity: "base" });
+  });
+}
+
+function parsePresetDirectoryListing(markup, directoryUrl) {
+  const doc = new DOMParser().parseFromString(markup, "text/html");
+  const directoryPath = directoryUrl.pathname.endsWith("/") ? directoryUrl.pathname : `${directoryUrl.pathname}/`;
+  const entries = new Map();
+
+  doc.querySelectorAll("a[href]").forEach((link) => {
+    const href = link.getAttribute("href");
+    if (!href) return;
+
+    let resolvedUrl;
+    try {
+      resolvedUrl = new URL(href, directoryUrl);
+    } catch {
+      return;
+    }
+
+    if (!resolvedUrl.pathname.startsWith(directoryPath)) return;
+
+    const fileName = decodeURIComponent(resolvedUrl.pathname.split("/").pop() || "");
+    if (!fileName || !fileName.toLowerCase().endsWith(".json")) return;
+
+    entries.set(fileName, buildPresetEntry(fileName, resolvedUrl.href));
+  });
+
+  return sortPresetEntries([...entries.values()]);
+}
+
+function renderPresetOptions(items) {
+  if (!presetSelect) return;
+
+  const selectedValue = presetSelect.value;
+  presetSelect.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = items.length ? "Cargar preset..." : "No hay presets";
+  presetSelect.append(placeholder);
+
+  if (!items.length) {
+    presetSelect.disabled = true;
+    presetSelect.value = "";
+    return;
+  }
+
+  const groups = new Map();
+
+  PRESET_GROUPS.forEach((group) => {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    groups.set(group.key, optgroup);
+  });
+
+  items.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.fileName;
+    option.textContent = item.label;
+    groups.get(item.groupKey)?.append(option);
+  });
+
+  PRESET_GROUPS.forEach((group) => {
+    const optgroup = groups.get(group.key);
+    if (optgroup?.children.length) {
+      presetSelect.append(optgroup);
+    }
+  });
+
+  presetSelect.disabled = false;
+  presetSelect.value = items.some((item) => item.fileName === selectedValue) ? selectedValue : "";
+}
+
+async function loadPresetCatalog() {
+  if (!presetSelect) return;
+
+  presetSelect.disabled = true;
+  presetSelect.replaceChildren();
+
+  const loadingOption = document.createElement("option");
+  loadingOption.value = "";
+  loadingOption.textContent = "Cargando presets...";
+  presetSelect.append(loadingOption);
+
+  try {
+    const response = await fetch(new URL(PRESET_DIRECTORY, window.location.href), { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const directoryUrl = new URL(response.url);
+    const markup = await response.text();
+    presetCatalog = parsePresetDirectoryListing(markup, directoryUrl);
+    renderPresetOptions(presetCatalog);
+
+    if (!presetCatalog.length) {
+      setStatus("No se encontraron archivos JSON en presets/.", true);
+    }
+  } catch (error) {
+    presetCatalog = [];
+    renderPresetOptions(presetCatalog);
+    setStatus(
+      `No se pudieron cargar los presets dinamicos: ${error.message}. Abre la app con un servidor HTTP que permita listar presets/.`,
+      true,
+    );
+  }
+}
+
+async function loadPresetByFileName(fileName) {
+  if (!fileName) return;
+
+  const preset = presetCatalog.find((item) => item.fileName === fileName);
+  if (!preset) {
+    setStatus("El preset seleccionado ya no esta disponible.", true);
+    renderPresetOptions(presetCatalog);
+    return;
+  }
+
+  if (presetSelect) {
+    presetSelect.disabled = true;
+  }
+
+  try {
+    const response = await fetch(preset.url, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    applyImportedParameters(payload);
+    setStatus(
+      geometrySnapshot?.valid
+        ? `Preset cargado: ${preset.label}. Pulsa Start para dibujar la curva.`
+        : `Preset cargado, pero la geometria no es valida: ${geometrySnapshot?.reason ?? "revision necesaria"}.`,
+      !geometrySnapshot?.valid,
+    );
+  } catch (error) {
+    setStatus(`No se pudo cargar el preset ${preset.label}: ${error.message}.`, true);
+  } finally {
+    renderPresetOptions(presetCatalog);
+    if (presetSelect) {
+      presetSelect.value = fileName;
+    }
+  }
 }
 
 function setStatus(message, isError = false) {
@@ -520,6 +714,12 @@ function syncUi() {
       );
     });
   }
+
+  if (presetSelect) {
+    presetSelect.addEventListener("change", async () => {
+      await loadPresetByFileName(presetSelect.value);
+    });
+  }
 }
 
 function refreshUiValues() {
@@ -771,6 +971,13 @@ function clearTraceLayer() {
   lastTracePoint = points.at(-1) ?? null;
 }
 
+function resetSimulationState() {
+  running = false;
+  elapsed = 0;
+  points = [];
+  clearTraceLayer();
+}
+
 function rebuildTraceLayer() {
   clearTraceLayer();
   if (points.length < 2) return;
@@ -973,8 +1180,10 @@ function applyImportedParameters(payload) {
   }
 
   geometrySnapshot = evaluateGeometry(model);
-  points = [];
-  clearTraceLayer();
+  resetSimulationState();
+  if (presetSelect) {
+    presetSelect.value = "";
+  }
   refreshUiValues();
   updateControlState();
   centerViewOnContent();
@@ -1131,10 +1340,10 @@ resetSimBtn.addEventListener("click", () => {
     orbitTeeth: false,
     arms: false,
   });
-  running = false;
-  elapsed = 0;
-  points = [];
-  clearTraceLayer();
+  resetSimulationState();
+  if (presetSelect) {
+    presetSelect.value = "";
+  }
   geometrySnapshot = evaluateGeometry(model);
   refreshUiValues();
   centerViewOnContent();
@@ -1204,6 +1413,7 @@ refreshUiValues();
 updateStageViewportSize();
 updateControlState();
 centerViewOnContent();
+loadPresetCatalog();
 requestAnimationFrame((now) => {
   lastTime = now;
   render(now);
