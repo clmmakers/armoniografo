@@ -27,7 +27,8 @@ const importParamsFileInput = document.getElementById("importParamsFile");
 const presetSelect = document.getElementById("presetSelect");
 const centerViewBtn = document.getElementById("centerView");
 const traceColorInput = document.getElementById("traceColor");
-const reverseDriveInput = document.getElementById("reverseDrive");
+const reverseDriveInputL = document.getElementById("reverseDriveL");
+const reverseDriveInputR = document.getElementById("reverseDriveR");
 const zoomInBtn = document.getElementById("zoomIn");
 const zoomOutBtn = document.getElementById("zoomOut");
 const zoomResetBtn = document.getElementById("zoomReset");
@@ -61,7 +62,8 @@ const INITIAL_MODEL = {
   orbitTeethL: 9,
   orbitTeethR: 21,
   driveSpeed: 0.004,
-  driveDirection: 1,
+  driveDirectionL: 1,
+  driveDirectionR: 1,
   phaseL: 0.73,
   phaseR: 3.38,
   armL: 280,
@@ -397,7 +399,9 @@ function getDerivedModel(cfg = model) {
   const baseRadiusR = cfg.toothModule * cfg.baseTeethR;
   const orbitRadiusL = cfg.toothModule * cfg.orbitTeethL;
   const orbitRadiusR = cfg.toothModule * cfg.orbitTeethR;
-  const driveDirection = cfg.driveDirection === -1 ? -1 : 1;
+  const legacyDriveDirection = cfg.driveDirection === -1 ? -1 : 1;
+  const driveDirectionL = cfg.driveDirectionL === -1 ? -1 : (cfg.driveDirectionL === 1 ? 1 : legacyDriveDirection);
+  const driveDirectionR = cfg.driveDirectionR === -1 ? -1 : (cfg.driveDirectionR === 1 ? 1 : legacyDriveDirection);
   const driveSpeed = Math.abs(cfg.driveSpeed);
   return {
     ...cfg,
@@ -405,9 +409,11 @@ function getDerivedModel(cfg = model) {
     baseRadiusR,
     orbitRadiusL,
     orbitRadiusR,
-    driveDirection,
+    driveDirectionL,
+    driveDirectionR,
     driveSpeed,
-    signedDriveSpeed: driveSpeed * driveDirection,
+    signedDriveSpeedL: driveSpeed * driveDirectionL,
+    signedDriveSpeedR: driveSpeed * driveDirectionR,
     fixedTeethL: cfg.baseTeethL,
     fixedTeethR: cfg.baseTeethR,
   };
@@ -458,12 +464,13 @@ function getSideState(side, timeSeconds, cfg = model) {
   const orbitRadius = isLeft ? derived.orbitRadiusL : derived.orbitRadiusR;
   const phase = isLeft ? derived.phaseL : derived.phaseR;
   const direction = isLeft ? -1 : 1;
+  const signedDriveSpeed = isLeft ? derived.signedDriveSpeedL : derived.signedDriveSpeedR;
   const baseCenter = {
     x: stage.width / 2 + (isLeft ? -derived.zeroDistance / 2 : derived.zeroDistance / 2),
     y: stage.height * 0.7,
   };
-  const spinAngle = phase + direction * TAU * derived.signedDriveSpeed * timeSeconds;
-  const orbitSpeed = derived.signedDriveSpeed * (orbitRadius / (baseRadius + orbitRadius));
+  const spinAngle = phase + direction * TAU * signedDriveSpeed * timeSeconds;
+  const orbitSpeed = signedDriveSpeed * (orbitRadius / (baseRadius + orbitRadius));
   const orbitAngle = phase + direction * TAU * orbitSpeed * timeSeconds;
   const orbitCenter = {
     x: baseCenter.x + (baseRadius + orbitRadius) * Math.cos(orbitAngle),
@@ -483,6 +490,23 @@ function getSideState(side, timeSeconds, cfg = model) {
     orbitAngle,
     spinAngle,
   };
+}
+
+function isSideClockwise(side, cfg = model) {
+  const derived = getDerivedModel(cfg);
+  return side === "L" ? derived.driveDirectionL === -1 : derived.driveDirectionR === 1;
+}
+
+function getDriveDirectionForClockwise(side, clockwise) {
+  if (side === "L") {
+    return clockwise ? -1 : 1;
+  }
+
+  return clockwise ? 1 : -1;
+}
+
+function getSideRotationLabel(side, cfg = model) {
+  return isSideClockwise(side, cfg) ? "horario" : "antihorario";
 }
 
 function circleIntersection(a, ra, b, rb) {
@@ -526,7 +550,7 @@ function getState(timeSeconds, cfg = model, cycleTurns = getCycleTurns(cfg)) {
 
 function getDynamicSimulationStep(cfg = model) {
   const derived = getDerivedModel(cfg);
-  const maxAngularSpeed = TAU * Math.abs(derived.signedDriveSpeed);
+  const maxAngularSpeed = TAU * Math.max(Math.abs(derived.signedDriveSpeedL), Math.abs(derived.signedDriveSpeedR));
 
   if (maxAngularSpeed <= GEOM_EPS) return MAX_SIM_STEP;
 
@@ -733,18 +757,35 @@ function syncUi() {
     });
   });
 
-  if (reverseDriveInput) {
-    reverseDriveInput.checked = model.driveDirection === -1;
-    reverseDriveInput.addEventListener("change", () => {
+  if (reverseDriveInputL) {
+    reverseDriveInputL.checked = isSideClockwise("L");
+    reverseDriveInputL.addEventListener("change", () => {
       stopForManualChange();
-      model.driveDirection = reverseDriveInput.checked ? -1 : 1;
+      model.driveDirectionL = getDriveDirectionForClockwise("L", reverseDriveInputL.checked);
       geometrySnapshot = evaluateGeometry(model);
       refreshUiValues();
       updateControlState();
       setStatus(
         geometrySnapshot.valid
-          ? "Sentido comun actualizado. Pulsa Start para reanudar."
-          : `Sentido comun actualizado, pero la geometria no es valida: ${geometrySnapshot.reason}.`,
+          ? "Sentido de O2 actualizado. Pulsa Start para reanudar."
+          : `Sentido de O2 actualizado, pero la geometria no es valida: ${geometrySnapshot.reason}.`,
+        !geometrySnapshot.valid,
+      );
+    });
+  }
+
+  if (reverseDriveInputR) {
+    reverseDriveInputR.checked = isSideClockwise("R");
+    reverseDriveInputR.addEventListener("change", () => {
+      stopForManualChange();
+      model.driveDirectionR = getDriveDirectionForClockwise("R", reverseDriveInputR.checked);
+      geometrySnapshot = evaluateGeometry(model);
+      refreshUiValues();
+      updateControlState();
+      setStatus(
+        geometrySnapshot.valid
+          ? "Sentido de O2' actualizado. Pulsa Start para reanudar."
+          : `Sentido de O2' actualizado, pero la geometria no es valida: ${geometrySnapshot.reason}.`,
         !geometrySnapshot.valid,
       );
     });
@@ -778,8 +819,12 @@ function refreshUiValues() {
     input.checked = syncState[key];
   });
 
-  if (reverseDriveInput) {
-    reverseDriveInput.checked = model.driveDirection === -1;
+  if (reverseDriveInputL) {
+    reverseDriveInputL.checked = isSideClockwise("L");
+  }
+
+  if (reverseDriveInputR) {
+    reverseDriveInputR.checked = isSideClockwise("R");
   }
 
   const zeroDistanceInput = inputMap.get("zeroDistance");
@@ -1208,11 +1253,11 @@ function applyImportedParameters(payload) {
   }
 
   model.driveSpeed = Math.abs(model.driveSpeed);
-  if (typeof payload.model.driveDirection === "number") {
-    model.driveDirection = payload.model.driveDirection === -1 ? -1 : 1;
-  } else if (typeof payload.model.driveSpeed === "number") {
-    model.driveDirection = payload.model.driveSpeed < 0 ? -1 : 1;
-  }
+  const legacyDriveDirection = typeof payload.model.driveDirection === "number"
+    ? (payload.model.driveDirection === -1 ? -1 : 1)
+    : (typeof payload.model.driveSpeed === "number" && payload.model.driveSpeed < 0 ? -1 : 1);
+  model.driveDirectionL = payload.model.driveDirectionL === -1 ? -1 : (payload.model.driveDirectionL === 1 ? 1 : legacyDriveDirection);
+  model.driveDirectionR = payload.model.driveDirectionR === -1 ? -1 : (payload.model.driveDirectionR === 1 ? 1 : legacyDriveDirection);
 
   geometrySnapshot = evaluateGeometry(model);
   resetSimulationState();
@@ -1261,7 +1306,7 @@ function updateEquationDisplay(state) {
 
   equationEl.textContent = [
     "R2 = modulo * dientes2,  R2' = modulo * dientes2'",
-    "sin derrape: giroPropio = velocidadBase, orbitacion = velocidadBase * R2 / (R1 + R2)",
+    "sin derrape: cada lado usa una velocidadBase con signo propio y orbitacion = velocidadBase * R2 / (R1 + R2)",
     "PL(t) = O2(t) - R2 * [cos(phiL(t)), sin(phiL(t))]",
     "PR(t) = O2'(t) - R2' * [cos(phiR(t)), sin(phiR(t))]",
     "Lapiz(t) = interseccion_superior( circ(PL, brazo1), circ(PR, brazo2) )",
@@ -1269,7 +1314,7 @@ function updateEquationDisplay(state) {
     `dientes1=${fmt(model.baseTeethL)}, dientes1'=${fmt(model.baseTeethR)}, modulo=${fmt(model.toothModule)}`,
     `R1=${fmt(derived.baseRadiusL)}, R1'=${fmt(derived.baseRadiusR)}, dientes2=${fmt(model.orbitTeethL)}, dientes2'=${fmt(model.orbitTeethR)}`,
     `R2=${fmt(derived.orbitRadiusL)}, R2'=${fmt(derived.orbitRadiusR)}`,
-    `velocidadBase=${fmt(Math.abs(model.driveSpeed))}, sentido=${model.driveDirection === -1 ? "inverso" : "directo"}, velocidadVisual=${fmt(model.playbackSpeed)}, brazo1=${fmt(model.armL)}, brazo2=${fmt(model.armR)}`,
+    `velocidadBase=${fmt(Math.abs(model.driveSpeed))}, sentidoO2=${getSideRotationLabel("L")}, sentidoO2'=${getSideRotationLabel("R")}, velocidadVisual=${fmt(model.playbackSpeed)}, brazo1=${fmt(model.armL)}, brazo2=${fmt(model.armR)}`,
     `distZeromin=${fmt(distZeroMinInternal)}, condicion distZeromin > R2 + R2' = ${fmt(orbitPair)}`,
     `margen brazos=${fmt(armReachMargin)}, ciclo geometrico=${cycleTurns}`,
     `garantia global = ${globallyValid ? "SI" : "NO"}`,
@@ -1285,7 +1330,7 @@ function updateEquationDisplay(state) {
     ? "Las ruedas moviles ruedan por engrane exterior sin derrape y la configuracion cumple las restricciones base de Distancia Zero."
     : `El engrane es sin derrape por construccion, pero la trayectoria del lapiz no es globalmente valida: ${geometrySnapshot?.reason ?? "ajusta radios, dentados o brazos"}.`;
   cycleInfoEl.textContent = `Ciclo geometrico: ${cycleTurns} vuelta(s) equivalentes | progreso ${(state.progress * 100).toFixed(1)}%`;
-  orbitHintEl.textContent = "Una unica velocidad base mueve ambas ruedas dentadas moviles. La diferencia entre lados sale del numero de dientes.";
+  orbitHintEl.textContent = "Ambas ruedas comparten la misma magnitud de velocidad base, pero cada una puede girar en sentido horario o antihorario de forma independiente.";
   if (recipeHintEl) {
     recipeHintEl.textContent = getRecipeText(geometrySnapshot, model);
   }

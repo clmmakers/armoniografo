@@ -8,13 +8,14 @@
     "orbitTeethL": 26,
     "orbitTeethR": 27,
     "driveSpeed": 0.012,
-    "driveDirection": 1,
     "phaseL": 0.73,
     "phaseR": 3.38,
     "armL": 420,
     "armR": 420,
     "cycleSeconds": 8,
-    "playbackSpeed": 30
+    "playbackSpeed": 30,
+    "driveDirectionL": 1,
+    "driveDirectionR": 1
   },
   "syncState": {
     "baseTeeth": false,

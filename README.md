@@ -11,7 +11,7 @@ No necesita build ni dependencias. Todo funciona con `HTML`, `CSS` y `JavaScript
 - El radio de cada engranaje se deriva como `radio = modulo * dientes`.
 - Las ruedas móviles ruedan exteriormente sobre las fijas sin derrape.
 - La velocidad geométrica se define con una `velocidad base común`.
-- El sentido de giro común puede invertirse.
+- Cada rueda móvil puede invertir su sentido de giro de forma independiente.
 - Los puntos rojos sobre `O2` y `O2'` generan trayectorias epicicloidales.
 - El lápiz es la intersección superior de los dos brazos.
 
@@ -22,7 +22,8 @@ No necesita build ni dependencias. Todo funciona con `HTML`, `CSS` y `JavaScript
 - número de dientes de `O2` y `O2'`
 - `Módulo de diente`
 - `Velocidad base común`
-- `Invertir sentido común`
+- `Sentido horario O2`
+- `Sentido horario O2'`
 - `Fase angular inicial izquierda`
 - `Fase angular inicial derecha`
 - `Brazo 1` y `Brazo 2`
@@ -30,6 +31,7 @@ No necesita build ni dependencias. Todo funciona con `HTML`, `CSS` y `JavaScript
 - `Velocidad visual`
 
 La interfaz incluye casillas para igualar pares izquierda-derecha cuando se quiera trabajar con configuraciones simétricas.
+Por defecto, `O2` arranca en sentido antihorario y `O2'` en sentido horario, como en la versión anterior.
 
 ## Restricciones geométricas
 
