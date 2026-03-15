@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "model": {
+    "zeroDistance": 330,
+    "baseTeethL": 40,
+    "baseTeethR": 40,
+    "toothModule": 2,
+    "orbitTeethL": 21,
+    "orbitTeethR": 21,
+    "driveSpeed": 0.006,
+    "driveDirectionL": 1,
+    "driveDirectionR": 1,
+    "phaseL": 0.73,
+    "phaseR": 3.38,
+    "armL": 611,
+    "armR": 611,
+    "cycleSeconds": 8,
+    "playbackSpeed": 30
+  },
+  "syncState": {
+    "baseTeeth": true,
+    "orbitTeeth": false,
+    "arms": true
+  },
+  "traceColor": "#66e2a8"
+}
