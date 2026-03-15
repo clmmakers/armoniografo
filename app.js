@@ -39,7 +39,10 @@ const MAX_ANGULAR_STEP = 0.03;
 const TRACE_MIN_SEGMENT = 0.35;
 const MAX_TRACE_POINTS = 120000;
 const TRACE_CANVAS_MARGIN = 1400;
+const appScriptEl = document.querySelector('script[src$="app.js"]');
+const ASSET_BASE_URL = new URL(".", appScriptEl?.src ?? window.location.href);
 const PRESET_DIRECTORY = "presets/";
+const PRESET_MANIFEST_FILE = "index.json";
 const PRESET_GROUPS = [
   { key: "base", prefix: "base_", label: "Basicos" },
   { key: "arq", prefix: "arq_", label: "Arquitectonicos" },
@@ -224,6 +227,28 @@ function parsePresetDirectoryListing(markup, directoryUrl) {
   return sortPresetEntries([...entries.values()]);
 }
 
+function parsePresetManifest(payload, directoryUrl) {
+  const files = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.files)
+      ? payload.files
+      : [];
+
+  return sortPresetEntries(
+    files
+      .filter((fileName) => typeof fileName === "string" && fileName.toLowerCase().endsWith(".json"))
+      .map((fileName) => buildPresetEntry(fileName, new URL(fileName, directoryUrl).href)),
+  );
+}
+
+function getPresetDirectoryUrl() {
+  return new URL(PRESET_DIRECTORY, ASSET_BASE_URL);
+}
+
+function getPresetManifestUrl() {
+  return new URL(`${PRESET_DIRECTORY}${PRESET_MANIFEST_FILE}`, ASSET_BASE_URL);
+}
+
 function renderPresetOptions(items) {
   if (!presetSelect) return;
 
@@ -279,24 +304,34 @@ async function loadPresetCatalog() {
   presetSelect.append(loadingOption);
 
   try {
-    const response = await fetch(new URL(PRESET_DIRECTORY, window.location.href), { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    try {
+      const manifestResponse = await fetch(getPresetManifestUrl(), { cache: "no-store" });
+      if (!manifestResponse.ok) {
+        throw new Error(`HTTP ${manifestResponse.status}`);
+      }
 
-    const directoryUrl = new URL(response.url);
-    const markup = await response.text();
-    presetCatalog = parsePresetDirectoryListing(markup, directoryUrl);
+      const manifestPayload = await manifestResponse.json();
+      presetCatalog = parsePresetManifest(manifestPayload, getPresetDirectoryUrl());
+    } catch (manifestError) {
+      const response = await fetch(getPresetDirectoryUrl(), { cache: "no-store" });
+      if (!response.ok) {
+        throw manifestError;
+      }
+
+      const directoryUrl = new URL(response.url);
+      const markup = await response.text();
+      presetCatalog = parsePresetDirectoryListing(markup, directoryUrl);
+    }
     renderPresetOptions(presetCatalog);
 
     if (!presetCatalog.length) {
-      setStatus("No se encontraron archivos JSON en presets/.", true);
+      setStatus("No se encontraron archivos JSON en presets/index.json ni en presets/.", true);
     }
   } catch (error) {
     presetCatalog = [];
     renderPresetOptions(presetCatalog);
     setStatus(
-      `No se pudieron cargar los presets dinamicos: ${error.message}. Abre la app con un servidor HTTP que permita listar presets/.`,
+      `No se pudieron cargar los presets dinamicos: ${error.message}. Genera y publica presets/index.json o habilita el listado de presets/.`,
       true,
     );
   }

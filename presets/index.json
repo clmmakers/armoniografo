@@ -1,0 +1,25 @@
+{
+  "files": [
+    "arq_agujero_negro_supermasivo_ancho.json",
+    "arq_agujero_negro_supermasivo_turbulento.json",
+    "arq_boveda_tensada.json",
+    "arq_cubierta_nervada.json",
+    "arq_eslabon_doble.json",
+    "arq_hex_ligado.json",
+    "arq_lazo_entrelazado.json",
+    "arq_malla_laminar.json",
+    "arq_reticula_cruzada.json",
+    "arq_sidney_bay.json",
+    "arq_superficie_reglada.json",
+    "arq_trama_isostatica.json",
+    "base_vela_cruzada.json",
+    "orn_abanico_fino.json",
+    "orn_ala_abierta.json",
+    "orn_caligrafia_tensa.json",
+    "orn_flor_asimetrica.json",
+    "orn_lazo_equilibrado.json",
+    "orn_mariposa_irregular.json",
+    "orn_roseta_densa.json",
+    "orn_silouhete.json"
+  ]
+}

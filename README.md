@@ -56,6 +56,14 @@ Se puede guardar y recuperar una configuración completa mediante JSON:
 - `Importar params`: carga una configuración exportada previamente.
 - `Preset`: descubre automáticamente los JSON dentro de `presets/`, los agrupa por tipo (`base_`, `arq_`, `orn_`) y carga la configuración elegida.
 
+En producción el selector intenta leer primero `presets/index.json`. Si añades o quitas presets, regenera ese fichero con:
+
+```bash
+node scripts/generate-presets-manifest.mjs
+```
+
+Si publicas con GitHub, el workflow [`.github/workflows/update-presets-manifest.yml`](/home/cesapple/Escritorio/armoniografo/.github/workflows/update-presets-manifest.yml) lo actualiza automáticamente en cada push que toque `presets/`.
+
 También se puede exportar el trazo actual como `SVG`.
 
 ## Vista
@@ -79,7 +87,7 @@ python3 -m http.server 8088
 
 Después abre `http://localhost:8088`.
 
-El selector de presets necesita abrir la app a través de HTTP para poder leer dinámicamente el contenido de `presets/`.
+El selector de presets funciona en producción publicando `presets/index.json`. Como respaldo, en local también puede leer el listado HTTP de `presets/`.
 
 ## Archivos
 

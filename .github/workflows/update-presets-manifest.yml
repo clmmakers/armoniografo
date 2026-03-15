@@ -1,0 +1,44 @@
+name: Update Presets Manifest
+
+on:
+  push:
+    paths:
+      - "presets/**/*.json"
+      - "scripts/generate-presets-manifest.mjs"
+      - ".github/workflows/update-presets-manifest.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-presets-manifest:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Regenerate presets manifest
+        run: node scripts/generate-presets-manifest.mjs
+
+      - name: Commit updated manifest
+        run: |
+          if git diff --quiet -- presets/index.json; then
+            echo "No manifest changes detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add presets/index.json
+          git commit -m "chore: update presets manifest"
+          git push
